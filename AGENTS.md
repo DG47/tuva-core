@@ -373,6 +373,13 @@ Write general-purpose SQL, prefer existing Tuva macros and package patterns,
 and isolate genuinely warehouse-specific behavior behind dispatched macros. A
 passing build on one warehouse is not evidence of portability to the others.
 
+Logical Data Quality depends on case-sensitive string comparison. SQL Server
+targets therefore require a case-sensitive database collation such as
+`SQL_Latin1_General_CP1_CS_AS`; the engine default
+`SQL_Latin1_General_CP1_CI_AS` makes those checks pass silently on values they
+should flag. Do not work around this by lowercasing the compared values, which
+would erase the case contract the checks exist to enforce.
+
 ## GitHub And Pull Requests
 
 - Create Tuva Core issues in `tuva-health/tuva-core`.
@@ -392,8 +399,10 @@ passing build on one warehouse is not evidence of portability to the others.
 
 - Same-repository pull requests automatically run `Tuva CI -- Snowflake`: one
   fixed Snowflake `dbt build --full-refresh` against the small synthetic
-  dataset. It builds Tuva Core and the integration project, runs unit and data
-  tests, enables Data Quality and its optional failure-key relation, and keeps
+  dataset. It builds this PR's local Tuva Core, the integration project, and all
+  eight standalone packages pinned to Git release tags in
+  `integration_tests/packages.yml`. It runs unit and data tests, enables Data
+  Quality and its optional failure-key relation, and keeps
   parity disabled. A package-version change does not alter this automatic path.
   The Snowflake status is informational and is not required for merge.
 - Run `Tuva CI -- All Warehouses` manually for the final release PR. Its only
@@ -412,9 +421,14 @@ passing build on one warehouse is not evidence of portability to the others.
   dbt commands, selectors, or flags.
 - Automatic secrets-backed CI never executes fork code. After review, a
   maintainer runs `External PR Snowflake CI` and supplies only the PR number.
-  That workflow validates code only and does not inspect package versions.
-- Routine Snowflake CI does not install standalone packages. Only manual
-  all-warehouse CI snapshots all eight package `main` branches before building.
+  That workflow uses the same checked-in package tags and does not choose or
+  compare Core release versions or perform release operations.
+- Routine Snowflake CI installs and builds all eight standalone packages from
+  the checked-in Git release tags. It verifies installed versions and commit
+  locks and requires successful model results from every package. The manifest,
+  run results, dependency lock, and package evidence are retained as artifacts.
+  Manual all-warehouse CI independently snapshots all eight package `main`
+  branches before building; it does not use the checked-in release tags.
 - Parity comparison is a separate manually initiated Snowflake release
   validation.
 

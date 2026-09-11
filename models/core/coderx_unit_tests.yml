@@ -205,7 +205,7 @@ unit_tests:
       Verifies an unmatched CodeRx Enterprise package remains unenriched and does not fall back to CodeRx Open terminology.
     model: core__medication
     config:
-      enabled: "{{ (var('claims_enabled', false) or var('clinical_enabled', false)) | as_bool }}"
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
     overrides:
       vars:
         clinical_enabled: false
@@ -224,8 +224,8 @@ unit_tests:
             , 'claims' as source_type
             , 'person' as person_id
             , 'member' as member_id
-            , null as patient_id
-            , null as encounter_id
+            , cast(null as {{ string_type }}) as patient_id
+            , cast(null as {{ string_type }}) as encounter_id
             , 'claim' as claim_id
             , 1 as claim_line_number
             , 'payer' as payer
@@ -239,12 +239,12 @@ unit_tests:
             , 'Stale CodeRx Open normalized description' as ndc_description
             , cast(null as {{ string_type }}) as rxnorm_code
             , cast(null as {{ string_type }}) as atc_code
-            , null as route
-            , null as strength
+            , cast(null as {{ string_type }}) as route
+            , cast(null as {{ string_type }}) as strength
             , 30 as quantity
-            , null as quantity_unit
+            , cast(null as {{ string_type }}) as quantity_unit
             , 30 as days_supply
-            , null as practitioner_id
+            , cast(null as {{ string_type }}) as practitioner_id
             , cast('2024-01-02 03:04:05' as {{ timestamp_type }}) as ingest_datetime
             , cast('2024-01-01 00:00:00' as {{ timestamp_type }}) as tuva_last_run
             , 'source' as data_source
@@ -293,7 +293,7 @@ unit_tests:
       Verifies a matched CodeRx Enterprise package enriches claims medication with NDC, RxNorm, and ATC codes and descriptions.
     model: core__medication
     config:
-      enabled: "{{ (var('claims_enabled', false) or var('clinical_enabled', false)) | as_bool }}"
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
     overrides:
       vars:
         clinical_enabled: false
@@ -312,8 +312,8 @@ unit_tests:
             , 'claims' as source_type
             , 'person' as person_id
             , 'member' as member_id
-            , null as patient_id
-            , null as encounter_id
+            , cast(null as {{ string_type }}) as patient_id
+            , cast(null as {{ string_type }}) as encounter_id
             , 'claim' as claim_id
             , 1 as claim_line_number
             , 'payer' as payer
@@ -327,12 +327,12 @@ unit_tests:
             , 'CodeRx Enterprise package drug' as ndc_description
             , cast(null as {{ string_type }}) as rxnorm_code
             , cast(null as {{ string_type }}) as atc_code
-            , null as route
-            , null as strength
+            , cast(null as {{ string_type }}) as route
+            , cast(null as {{ string_type }}) as strength
             , 30 as quantity
-            , null as quantity_unit
+            , cast(null as {{ string_type }}) as quantity_unit
             , 30 as days_supply
-            , null as practitioner_id
+            , cast(null as {{ string_type }}) as practitioner_id
             , cast('2024-02-03 04:05:06' as {{ timestamp_type }}) as ingest_datetime
             , cast('2024-01-01 00:00:00' as {{ timestamp_type }}) as tuva_last_run
             , 'source' as data_source
@@ -456,7 +456,7 @@ unit_tests:
       Core medication grain, so both domain records must remain present.
     model: core__medication
     config:
-      enabled: "{{ (var('claims_enabled', false) or var('clinical_enabled', false)) | as_bool }}"
+      enabled: "{{ (var('claims_enabled', false) and var('clinical_enabled', false)) | as_bool }}"
     overrides:
       vars:
         claims_enabled: true

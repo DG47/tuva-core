@@ -17,6 +17,14 @@ Tuva Core requires dbt 1.10.5 through 2.x and supports Snowflake, Databricks,
 BigQuery, Microsoft Fabric, Redshift, and DuckDB. The 1.0 package ecosystem is
 validated against both dbt Core 2.0 and dbt Fusion on DuckDB.
 
+SQL Server deployments must use a case-sensitive database collation such as
+`SQL_Latin1_General_CP1_CS_AS`. Logical Data Quality compares values against
+exact lowercase literals, for example `sex in ('male', 'female', 'unknown')`.
+Under the SQL Server default `SQL_Latin1_General_CP1_CI_AS`, `'MALE'` compares
+equal to `'male'`, so those checks silently report an invalid value as valid
+instead of failing. Set the collation when the database is created; changing it
+afterwards requires rebuilding the affected objects.
+
 ## What Tuva Core Includes
 
 | Area | Responsibility |
@@ -52,7 +60,22 @@ compatibility, and release lifecycle.
 
 ## Install Tuva Core
 
-Add a published version to the parent project's `packages.yml`:
+Install a published GitHub release directly from the parent project's
+`packages.yml`. Use its exact tag, including the `v` prefix:
+
+```yaml
+packages:
+  - git: "https://github.com/tuva-health/tuva-core.git"
+    revision: "<published-release-tag>"
+```
+
+For example, a published `v1.0.0` release uses `revision: "v1.0.0"`.
+Git installation does not require the release to be indexed by dbt Hub.
+An exact 40-character commit can also identify a reviewed development revision.
+Avoid mutable branch names for production installations.
+
+Once the version is available on dbt Hub, this alternative installs the same
+package. Use one form per package, not both:
 
 ```yaml
 packages:
@@ -60,13 +83,11 @@ packages:
     version: "<published-version>"
 ```
 
-For development against an explicitly reviewed Git ref:
-
-```yaml
-packages:
-  - git: "https://github.com/tuva-health/tuva-core.git"
-    revision: "<immutable-tag-or-commit>"
-```
+Add each optional Tuva package to the same root `packages.yml` using its own
+repository URL and published tag. The parent project installs Core explicitly;
+standalone packages do not install it for you. Semantic Layer also requires
+the sibling packages listed in its installation instructions. Existing
+dependencies such as `dbt-labs/dbt_utils` can continue to resolve through Hub.
 
 Install dependencies with `dbt deps`. The parent project must expose the Tuva
 Input Layer models and enable the domains it maps:
