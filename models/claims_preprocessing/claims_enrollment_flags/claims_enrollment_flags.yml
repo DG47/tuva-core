@@ -22,6 +22,8 @@ models:
           Indicates the line number for the particular line of the claim.
       - name: person_id
         description: Unique identifier for each patient in the dataset.
+      - name: member_id
+        description: Identifier assigned by the payer or health plan for the person's coverage during the member month.
       - name: payer
         description: Name of the payer.
       - name: plan
@@ -34,14 +36,10 @@ models:
         description: |
           The claim start date year and month.  If claim line start date is missing then the following column will be used, 
           in the following order if also NULL:  claim start date, admission date
-      - name: inferred_claim_end_year_month
-        description: |
-          The claim end date year and month.  If claim line end date is missing then the following column will be used, 
-          in the following order if also NULL:  claim end date, discharge date
       - name: inferred_claim_start_column_used
-        description: The name of the column used to populated inferred_claim_start_year_month.
-      - name: inferred_claim_end_column_used
-        description: The name of the column used to populated inferred_claim_start_column_used.
+        description: The name of the column used to populate inferred_claim_start_year_month.
+      - name: tuva_last_run
+        description: Timestamp for when the model was last run.
 
   - name: claims_enrollment__flag_rx_claims_with_enrollment
     description: This table contains pharmacy claims with matching member-month enrollment. Eligibility matching stops at the calendar month containing the date portion of tuva_last_run for both open and finite spans, so future member months are not created.
@@ -61,6 +59,8 @@ models:
           Indicates the line number for the particular line of the claim.
       - name: person_id
         description: Unique identifier for each patient in the dataset.
+      - name: member_id
+        description: Identifier assigned by the payer or health plan for the person's coverage during the member month.
       - name: payer
         description: Name of the payer.
       - name: plan
@@ -71,3 +71,5 @@ models:
         description: 'The unique combination of person_id, member_id, year_month, payer, plan, and data source.'
       - name: paid_year_month
         description: the year and month of the date the pharmacy claim was paid.
+      - name: tuva_last_run
+        description: Timestamp for when the model was last run.
