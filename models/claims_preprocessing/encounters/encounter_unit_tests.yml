@@ -166,6 +166,85 @@ unit_tests:
           anchor_claim_id: null
           claim_line_attribution_number: 3
 
+  - name: test_emergency_department_prof_claims_excludes_claims_in_other_ed_encounters
+    description: >
+      The outpatient institutional roll-up attaches outpatient facility claims
+      that start inside an emergency department encounter window to that
+      encounter. Institutional emergency department claims already form their
+      own encounters, so none of them may become a candidate for a different
+      emergency department encounter. Professional lines keep their existing
+      attribution to every overlapping encounter.
+    model: emergency_department__prof_claims
+    config:
+      enabled: "{{ var('claims_enabled', false) | as_bool }}"
+    overrides:
+      vars:
+        claims_enabled: true
+    given:
+      - input: ref('emergency_department__generate_encounter_id')
+        format: sql
+        rows: |
+          select 'pds-1' as patient_data_source_id, 'ed-a' as claim_id, 'enc-a' as encounter_id, 'ed-a' as original_anchor_claim, 1 as encounter_claim_number
+          union all
+          select 'pds-1', 'ed-b1', 'enc-b', 'ed-b2', 1
+          union all
+          select 'pds-1', 'ed-b2', 'enc-b', 'ed-b2', 2
+      - input: ref('emergency_department__start_end_dates')
+        format: sql
+        rows: |
+          select 'enc-a' as encounter_id, cast('2024-01-01' as date) as encounter_start_date, cast('2024-01-02' as date) as encounter_end_date
+          union all
+          select 'enc-b', cast('2024-01-02' as date), cast('2024-01-02' as date)
+      - input: ref('encounters__stg_medical_claim')
+        format: sql
+        rows: |
+          select 'ed-a' as claim_id, 1 as claim_line_number, 'ed-a|1' as claim_line_id, 'source-a' as data_source, 'pds-1' as patient_data_source_id, cast('2024-01-01' as date) as start_date
+          union all
+          select 'ed-b1', 1, 'ed-b1|1', 'source-a', 'pds-1', cast('2024-01-02' as date)
+          union all
+          select 'ed-b2', 1, 'ed-b2|1', 'source-a', 'pds-1', cast('2024-01-02' as date)
+          union all
+          select 'op-clinic', 1, 'op-clinic|1', 'source-a', 'pds-1', cast('2024-01-01' as date)
+          union all
+          select 'prof-1', 1, 'prof-1|1', 'source-a', 'pds-1', cast('2024-01-02' as date)
+      - input: ref('encounters__stg_professional')
+        format: sql
+        rows: |
+          select 'prof-1' as claim_id, 1 as claim_line_number, 'prof-1|1' as claim_line_id, 'source-a' as data_source
+      - input: ref('encounters__stg_outpatient_institutional')
+        format: sql
+        rows: |
+          select 'ed-a' as claim_id, 'source-a' as data_source
+          union all
+          select 'ed-b1', 'source-a'
+          union all
+          select 'ed-b2', 'source-a'
+          union all
+          select 'op-clinic', 'source-a'
+    expect:
+      rows:
+        - encounter_id: enc-a
+          encounter_start_date: 2024-01-01
+          encounter_end_date: 2024-01-02
+          claim_id: prof-1
+          claim_line_number: 1
+          data_source: source-a
+          claim_attribution_number: 1
+        - encounter_id: enc-b
+          encounter_start_date: 2024-01-02
+          encounter_end_date: 2024-01-02
+          claim_id: prof-1
+          claim_line_number: 1
+          data_source: source-a
+          claim_attribution_number: 2
+        - encounter_id: enc-a
+          encounter_start_date: 2024-01-01
+          encounter_end_date: 2024-01-02
+          claim_id: op-clinic
+          claim_line_number: 1
+          data_source: source-a
+          claim_attribution_number: 1
+
   - name: test_patient_data_source_id_uses_unambiguous_stable_encoding
     description: >-
       Proves patient_data_source_id distinguishes pipe-delimited component

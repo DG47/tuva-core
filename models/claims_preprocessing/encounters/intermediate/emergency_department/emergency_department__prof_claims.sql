@@ -17,6 +17,15 @@ with first_claim as (
     inner join {{ ref('emergency_department__start_end_dates') }} as dat on f.encounter_id = dat.encounter_id
 )
 
+/* institutional emergency department claims already form their own encounters,
+   so they are never rolled up into another emergency department encounter */
+, emergency_department_claims as (
+    select distinct
+          claim_id
+        , patient_data_source_id
+    from {{ ref('emergency_department__generate_encounter_id') }}
+)
+
 
 -- ensuring each claim is only attributed to one encounter with claim_attribution_number
 , inst_and_prof as (
@@ -47,7 +56,9 @@ inner join {{ ref('encounters__stg_outpatient_institutional') }} as inst on med.
 and med.data_source = inst.data_source
 inner join join_first_claim_dates as dat on med.patient_data_source_id = dat.patient_data_source_id
 and med.start_date between dat.encounter_start_date and dat.encounter_end_date
-where dat.claim_id <> med.claim_id
+left outer join emergency_department_claims as ed on med.claim_id = ed.claim_id
+and med.patient_data_source_id = ed.patient_data_source_id
+where ed.claim_id is null
 )
 
 select distinct encounter_id
